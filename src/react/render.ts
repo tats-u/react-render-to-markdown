@@ -139,9 +139,9 @@ function toMarkdown(root: MarkdownNode): string {
         return childrenMd;
       }
       // Find backtick sequence lengths present in the content
-      const backtickLengths = new Map<number, true>();
+      const backtickLengths = new Set<number>();
       for (const match of childrenMd.matchAll(/`+/g)) {
-        backtickLengths.set(match[0].length, true);
+        backtickLengths.add(match[0].length);
       }
       // Choose the minimum backtick count not present in the content
       let backtickCount = 1;
