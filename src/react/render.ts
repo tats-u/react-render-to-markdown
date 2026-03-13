@@ -165,14 +165,14 @@ function toMarkdown(root: MarkdownNode): string {
 
       const language = typeof _language === 'string' ? _language : '';
       const title = props['data-title'] || '';
-      // Find the longest backtick sequence in content and use one more
-      let maxBacktickLength = 0;
-      for (const match of childrenMd.matchAll(/`+/g)) {
-        if (match[0].length > maxBacktickLength) {
-          maxBacktickLength = match[0].length;
+      // Find the longest backtick sequence (3+) in content and use one more
+      let maxFenceLength = 2;
+      for (const match of childrenMd.matchAll(/`{3,}/g)) {
+        if (match[0].length > maxFenceLength) {
+          maxFenceLength = match[0].length;
         }
       }
-      const block = '`'.repeat(Math.max(3, maxBacktickLength + 1));
+      const block = '`'.repeat(maxFenceLength + 1);
 
       return `\n${block}${language}${title ? ` title=${title}` : ''}\n${childrenMd}\n${block}\n`;
     }
