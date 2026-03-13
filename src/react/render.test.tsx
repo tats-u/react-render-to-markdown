@@ -257,6 +257,72 @@ console.log('Hello, world!');
       "
     `);
   });
+
+  it('inline code with backticks inside uses minimum unused backtick count', async () => {
+    // Single backtick inside → wrap with ``
+    expect(await renderToMarkdownString(<code>{'`'}</code>)).toBe('`` ` ``');
+
+    // `` inside → wrap with single backtick
+    expect(await renderToMarkdownString(<code>{'``'}</code>)).toBe('` `` `');
+
+    // `, ``, and ```` inside → wrap with ``` (minimum unused)
+    expect(await renderToMarkdownString(<code>{'a`a``a````a'}</code>)).toBe(
+      '```a`a``a````a```',
+    );
+  });
+
+  it('inline code pads with spaces when content starts/ends with backtick or space', async () => {
+    // Content starting and ending with space → pad
+    expect(await renderToMarkdownString(<code>{' a '}</code>)).toBe('`  a  `');
+
+    // Content that is only spaces → no padding
+    expect(await renderToMarkdownString(<code>{'   '}</code>)).toBe('`   `');
+
+    // Content starting with backtick → uses 2 backticks + pad
+    expect(await renderToMarkdownString(<code>{'`a'}</code>)).toBe('`` `a ``');
+
+    // Content ending with backtick → uses 2 backticks + pad
+    expect(await renderToMarkdownString(<code>{'a`'}</code>)).toBe('`` a` ``');
+  });
+
+  it('pre uses dynamic backtick count based on content', async () => {
+    // No backticks in content → use 3
+    expect(
+      await renderToMarkdownString(
+        <pre data-lang="ts">
+          <code>{'const a = 1;\n'}</code>
+        </pre>,
+      ),
+    ).toMatchInlineSnapshot(`
+      "
+      \`\`\`ts
+      const a = 1;
+
+      \`\`\`
+      "
+    `);
+
+    // Content with ```` (4 backticks) → use 5
+    expect(
+      await renderToMarkdownString(
+        <pre data-lang="mdx">
+          <code>{`\`\`\`\`mdx
+# Hello
+\`\`\`\`
+`}</code>
+        </pre>,
+      ),
+    ).toMatchInlineSnapshot(`
+      "
+      \`\`\`\`\`mdx
+      \`\`\`\`mdx
+      # Hello
+      \`\`\`\`
+
+      \`\`\`\`\`
+      "
+    `);
+  });
 });
 
 describe('renderToMarkdownString - styles', () => {

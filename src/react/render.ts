@@ -132,22 +132,47 @@ function toMarkdown(root: MarkdownNode): string {
     case 'em':
     case 'i':
       return `*${childrenMd}*`;
-    case 'code':
+    case 'code': {
       // When <code> is nested inside <pre>, it represents the code block body,
       // so we must not wrap it with inline backticks (would create nested fences).
       if (root.parent?.type === 'pre') {
         return childrenMd;
       }
-      return `\`${childrenMd}\``;
+      // Find backtick sequence lengths present in the content
+      const backtickLengths = new Map<number, true>();
+      for (const match of childrenMd.matchAll(/`+/g)) {
+        backtickLengths.set(match[0].length, true);
+      }
+      // Choose the minimum backtick count not present in the content
+      let backtickCount = 1;
+      while (backtickLengths.has(backtickCount)) {
+        backtickCount++;
+      }
+      const backticks = '`'.repeat(backtickCount);
+      // Pad with spaces if content starts/ends with backtick or space,
+      // unless the content consists entirely of spaces.
+      const needsPadding =
+        childrenMd.length > 0 &&
+        !/^ +$/.test(childrenMd) &&
+        (/^[` ]/.test(childrenMd) || /[` ]$/.test(childrenMd));
+      return needsPadding
+        ? `${backticks} ${childrenMd} ${backticks}`
+        : `${backticks}${childrenMd}${backticks}`;
+    }
     case 'pre': {
       const _language =
         props['data-lang'] || props.language || props.lang || '';
 
       const language = typeof _language === 'string' ? _language : '';
       const title = props['data-title'] || '';
-      const block = ['markdown', 'mdx', 'md', ''].includes(language)
-        ? '````'
-        : '```';
+      // Find the longest backtick sequence in content and use one more
+      let maxBacktickLength = 0;
+      for (const match of childrenMd.matchAll(/`+/g)) {
+        if (match[0].length > maxBacktickLength) {
+          maxBacktickLength = match[0].length;
+        }
+      }
+      const block = '`'.repeat(Math.max(3, maxBacktickLength + 1));
 
       return `\n${block}${language}${title ? ` title=${title}` : ''}\n${childrenMd}\n${block}\n`;
     }
